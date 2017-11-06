@@ -1,0 +1,2 @@
+include versioneer.py
+include tetrad/_version.py
