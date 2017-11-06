@@ -16,6 +16,8 @@ scipy = "*"
 
 [dev-packages]
 
+ipython = "*"
+matplotlib = "*"
 
 
 [requires]
