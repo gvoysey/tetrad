@@ -1,12 +1,16 @@
+import selenium.common
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
-from os import path
+from selenium.webdriver.support.ui import WebDriverWait
+from os import path, remove
 from scipy.io import savemat
 import csv
 from collections import defaultdict
+from datetime import datetime
 import re
 import sys
 import time
+import json
 
 genelist = [
             'ITGB5'
@@ -29,7 +33,7 @@ genelist = [
             ,'LILRB3'
             ,'LILRA6'
             ,'LILRA2'
-            ,'ADGRE2'
+            ,'EMR2'# referred to as 'ADGRE2' in the paper
             ,'LILRB4'
             ,'CD70'
             ,'CCR1'
@@ -45,7 +49,7 @@ genelist = [
 dataset = 'MERGED_AML'
 
 options = webdriver.ChromeOptions()
-# options.add_argument('headless')
+#options.add_argument('headless')
 # options.binary_location ='chromedriver.exe'
 
 def sanitize_name(namestr):
@@ -89,15 +93,21 @@ def process_csv(fname):
     with open(fname,'r') as _:
         r = csv.reader(_)
         headers = next(r)
-        gene_name = headers.pop(0)
+        gene_name = headers.pop(0) #discard the first column, no data.
         values = next(r)
-        values.pop(0)
+        values.pop(0) #discard the first column, no data.
+        matlab_data = defaultdict(list)
         data = defaultdict(list)
         for k,v in zip(headers,values):
-            data[sanitize_name(k)].append(float(v))
+            matlab_data[sanitize_name(k)].append(float(v))
+            data[k].append(float(v))
+        matlab_data['dataset']:dataset
         data['dataset']:dataset
-    struct = {name:data}
+    struct = {name:matlab_data}
     savemat(f'{name}.mat', struct)
+    with open(f'{name}.json','w') as _:
+        json.dump(data,_)
+    # remove(path.abspath(fname))
 
 
 
@@ -109,19 +119,26 @@ def main(*args):
     else:
         to_download=args
     csvs = []
-    driver=webdriver.Chrome(chrome_options=options)
-    for gene in to_download:        
-        driver.implicitly_wait(5)
+
+    for gene in to_download:
+        driver = webdriver.Chrome(chrome_options=options)
+        driver.implicitly_wait(15)
         driver.get(query_url(gene, dataset))
-        driver.find_element_by_id('export_text').click()
-        time.sleep(1)
-        fname = path.join(path.expanduser('~'), 'Downloads',f'{gene}_log2.csv')
-        if not path.isfile(fname):
-            time.sleep(5)
-            if not path.isfile(fname):      
-                raise FileExistsError(f'{fname} not found!')
-        csvs.append(fname)
-    driver.close()
+        # driver.refresh()
+        try:
+            dl_button = driver.find_element_by_id('export_text')
+            dl_button.click()
+            fname = path.join(path.expanduser('~'), 'Downloads',f'{gene}_log2.csv')
+            dlstart = datetime.now()
+            while not path.isabs(fname):
+                WebDriverWait(driver=driver,timeout=15)
+                if (datetime.start()-dlstart) > 60*5:
+                    raise FileExistsError(f'could not download {fname}')
+            #driver.close()
+            csvs.append(fname)
+        except selenium.common.exceptions.UnexpectedAlertPresentException:
+            print(f'failed to obtain data for {gene}, not present in database.')
+
     for f in csvs:
         process_csv(f)
         
