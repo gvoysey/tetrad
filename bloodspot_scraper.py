@@ -9,9 +9,39 @@ import sys
 import time
 
 genelist = [
-            'IL3RA'
-            ,
+            'ITGB5'
+            , 'PTPRJ'
+            , 'SLC30A1'
+            , 'EMC10'
+            , 'SLC6A6'
+            , 'TNFRSF1B'
+            , 'CD82'
+            , 'ITGAX'
+            , 'CR1'
+            ,'DAGLB'
+            ,'SEMA4A'
+            ,'TLR2'
+            ,'LTB4R'
+            ,'P2RY13'
+            ,'LILRB2'
+            ,'EMB'
+            ,'CD96'
+            ,'LILRB3'
+            ,'LILRA6'
+            ,'LILRA2'
+            ,'ADGRE2'
+            ,'LILRB4'
+            ,'CD70'
+            ,'CCR1'
+            ,'IL3RA'
+            ,'CD44'
+            ,'FOLR2'
+            ,'CD38'
+            ,'FUT3'
+            ,'CD33'
+            ,'CLEC12A'
             ]
+
 dataset = 'MERGED_AML'
 
 options = webdriver.ChromeOptions()
@@ -65,6 +95,7 @@ def process_csv(fname):
         data = defaultdict(list)
         for k,v in zip(headers,values):
             data[sanitize_name(k)].append(float(v))
+        data['dataset']:dataset
     struct = {name:data}
     savemat(f'{name}.mat', struct)
 
