@@ -143,6 +143,17 @@ def main(*args):
         process_csv(f)
         
 
+def get_descriptions(driver):
+    """Return the description of the variables"""
+    driver.find_element_by_id('abbreviations').click()
+    desc = driver.find_element_by_id('dropdownContentAbbs')
+    desc = desc.split('Abbreviation')[1]
+    descs = desc.split('\n')
+    descriptions = {}
+    for line in descs:
+        abbrev, *full = line.split(' ')
+        descriptions[abbrev] = ' '.join(full)
+    return descriptions
 
 
 if __name__ == "__main__":
