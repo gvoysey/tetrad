@@ -1,3 +1,4 @@
+
 import selenium.common
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
@@ -74,12 +75,22 @@ def sanitize_name(namestr):
                 ,'switch'
                 ,'try'
                 ,'while']
-    sanitizer = re.compile(r'(\W)')
-    namestr = sanitizer.sub('',namestr)
-    if not namestr[0].isalpha():
-        namestr = f'matlab_{namestr}'
     if namestr in keywords:
         raise NameError(f'{namestr} is not a valid matlab name')
+
+    nonalpha = re.compile(r'([^A-Za-z0-9_])') #match whatever isn't alphanumeric or underscore
+    known_bad = {
+                 ' ':'_',
+                 '(':'_lp_',
+                 ')':'_rp_',
+                 '-':'_minus_',
+                 '/':'_div_',
+                 ';':'_sc_'
+                 }.get('')
+    for illegal in nonalpha.findall(namestr):
+        namestr=namestr.replace(illegal,known_bad[illegal])
+    if not namestr[0].isalpha():
+        namestr = f'm_{namestr}'
     return namestr
 
 
