@@ -53,45 +53,31 @@ options = webdriver.ChromeOptions()
 #options.add_argument('headless')
 # options.binary_location ='chromedriver.exe'
 
-def sanitize_name(namestr):
-    """A valid variable name starts with a letter, followed by letters, digits, or underscores."""
-    keywords = ['break'
-                ,'case'
-                ,'catch'
-                ,'classdef'
-                ,'continue'
-                ,'else'
-                ,'elseif'
-                ,'end'
-                ,'for'
-                ,'function'
-                ,'global'
-                ,'if'
-                ,'otherwise'
-                ,'parfor'
-                ,'persistent'
-                ,'return'
-                ,'spmd'
-                ,'switch'
-                ,'try'
-                ,'while']
-    if namestr in keywords:
-        raise NameError(f'{namestr} is not a valid matlab name')
+def known_bad(x):
+    """provide string substitutions for common invalid tokens, or remove them if not found."""
+    return {' ': '_',
+            '(': '_lp_',
+            ')': '_rp_',
+            '-': '_minus_',
+            '/': '_div_',
+            ';': '_sc_'
+            }.get(x, '')
 
-    nonalpha = re.compile(r'([^A-Za-z0-9_])') #match whatever isn't alphanumeric or underscore
-    known_bad = {
-                 ' ':'_',
-                 '(':'_lp_',
-                 ')':'_rp_',
-                 '-':'_minus_',
-                 '/':'_div_',
-                 ';':'_sc_'
-                 }.get('')
-    for illegal in nonalpha.findall(namestr):
-        namestr=namestr.replace(illegal,known_bad[illegal])
+
+def sanitize_name(namestr):
+    """A valid variable name starts with a letter, followed by letters, 
+    digits, or underscores, and cannot be one of several reserved words."""
+    keywords = {'break', 'case', 'catch', 'classdef', 'continue', 'else', 'elseif', 'end', 'for', 'function',
+                'global', 'if', 'otherwise', 'parfor', 'persistent', 'return', 'spmd', 'switch', 'try', 'while'}
+    if namestr in keywords:
+        raise NameError(f'{namestr} is not a valid matlab name')    
+    
+    # match whatever isn't alphanumeric or underscore
+    for illegal in re.compile(r'([^A-Za-z0-9_])').findall(namestr):
+        namestr = namestr.replace(illegal, known_bad(illegal))
     if not namestr[0].isalpha():
         namestr = f'm_{namestr}'
-    return namestr
+return namestr
 
 
 
