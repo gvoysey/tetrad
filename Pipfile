@@ -11,6 +11,7 @@ docopt = "*"
 scipy = "*"
 selenium = "*"
 Scrapy = "*"
+ipython = "*"
 
 [dev-packages]
 ipython = "*"
