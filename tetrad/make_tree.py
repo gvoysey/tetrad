@@ -11,7 +11,7 @@ with open(gene_data, 'r') as f:
     antigens = json.load(f)
     antigens.pop('date_accessed')
 
-dyads = list(frozenset(c) for c in combinations(antigens, 2))
+dyads = list(combinations(antigens, 2))
 
 weights = np.ones(41)
 
@@ -66,16 +66,31 @@ def main():
         # BR is A and C
         br = Node(bush_root, parent=root)
         br.cost = cost(br.name)
-        
+
         #all children are A and D
-        children = list(d for d in dyads if len(frozenset.intersection(d,bush_root))==1)
-        # all grandchildren are B and C
-        grandchildren = list(d for d in dyads if  len(frozenset.intersection(d,bush_root))==1
-                                              and frozenset.isdisjoint(d,children))
-        # all greatgrandchildren are B and D
-        greatgrandchildren = list(d for d in dyads if frozenset.isdisjoint(d,bush_root)
-                                                   and len(frozenset.intersection(d,children))==1
-                                                   and len(frozenset.intersection(d,grandchildren))==1)
+        children = [d for d in dyads if d != bush_root and d[0] == bush_root[0]]
+        for child in children:
+            # all grandchildren are B and C
+            grandchildren = [d for d in dyads if d != bush_root and d!= child
+                             and not any(d[0] in c for c in child)
+                             and not any(d[1] in c for c in child)]
+
+            for grandchild in grandchildren:
+                # all greatgrandchildren are B and D
+                greatgrandchildren =[d for d in dyads if d !=bush_root and d!= child and d !=grandchild
+                                     and d[0]==grandchild[0]
+                                     and d[1]==child[1]]
+                for greatchild in grandchildren:
+                    tetrad = [frozenset(bush_root),frozenset(child),frozenset(grandchild), frozenset(greatchild)]
+                    if(is_valid(tetrad)):
+                        print(tetrad)
+                    else:
+                        print('.', end='')
+
+
+
+
+
         print('erk.')
         # for pc in dyads:
         #     if pc != br.name:  # and len(pc.intersection(root.name)==1):
