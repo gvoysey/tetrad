@@ -1,5 +1,6 @@
 import json
-from itertools import combinations, permutations
+from itertools import permutations
+from collections import defaultdict
 
 import numpy as np
 import sympy
@@ -27,14 +28,14 @@ def is_valid(tetrad):
     elements = sorted(list(frozenset.union(*tetrad)))
     if len(elements) > 4:
         return False
-    A = np.zeros((4, 4))
-    # the (i,j)th element of A is 1 if the ith tetrad pair 
+    tetrad_state = np.zeros((4, 4))
+    # the (i,j)th element of tetrad_state is 1 if the ith tetrad pair
     # contains the jth unique string
     for i, pair in enumerate(tetrad):
         for j, e in enumerate(elements):
             if e in pair:
-                A[i, j] = 1
-    return sympy.Matrix(A).rref() == valid_scoring
+                tetrad_state[i, j] = 1
+    return sympy.Matrix(tetrad_state).rref() == valid_scoring
 
 
 def cost(pair):
@@ -48,21 +49,11 @@ def cost(pair):
     return np.mean(cost)
 
 
-def add_children(node: Node):
-    if node.root.height > 5:
-        return
-    ancestor_dyads = [x.name for x in node.ancestors]
-
-
 def main():
-    # for x in combinations(dyads, 4):
-    #     if is_valid(x):
-    #         print(x)
-
-    # generate an iterable of pairs.
     root = Node({})
     root.cost = -np.inf
     # (a, c), (a, d), (b, c), (b, d)
+    bushes = defaultdict(list)
     for bush_root in dyads:
         # bush_root is A and C
         br = Node(bush_root, parent=root)
@@ -82,23 +73,16 @@ def main():
                 # all greatgrandchildren are B and D
                 greatgrandchildren = [d for d in dyads if d[0] == grandchild[0]
                                       and d[1] == child[1]]
-                for greatchild in grandchildren:
+                for greatchild in greatgrandchildren:
                     tetrad = [frozenset(bush_root), frozenset(child), frozenset(grandchild), frozenset(greatchild)]
-                    if (is_valid(tetrad)):
+                    if is_valid(tetrad):
+                        r = Node(bush_root)
+                        c = Node(child, parent=r)
+                        gc = Node(grandchild, parent=c)
+                        ggc = Node(greatchild, parent=gc)
+                        bushes[r] = c
                         print(tetrad)
-
-
-        print('erk.')
-        # for pc in dyads:
-        #     if pc != br.name:  # and len(pc.intersection(root.name)==1):
-        #         x = Node(pc, parent=br)
-        #         x.cost = cost(x.name)
-
-        # for br in dyads:
-        #     #br is "A and C"
-        #     #children can be any of "A and D", "B and C", "B and D".
-        #     # these are potential A and D and B and Cs.
-        #     children = [c for c in dyads if len(c.intersection(test))==1]
+        print('buhh')
 
 
 if __name__ == "__main__":
