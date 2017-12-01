@@ -1,5 +1,5 @@
 import json
-from itertools import combinations
+from itertools import combinations, permutations
 
 import numpy as np
 import sympy
@@ -11,12 +11,12 @@ with open(gene_data, 'r') as f:
     antigens = json.load(f)
     antigens.pop('date_accessed')
 
-dyads = list(combinations(antigens, 2))
+dyads = list(permutations(antigens, 2))
 
 weights = np.ones(41)
 
 valid_scoring = sympy.Matrix(np.array([[1, 0, 1, 0], [1, 0, 0, 1]
-                                     , [0, 1, 1, 0], [0, 1, 0, 1]])
+                                          , [0, 1, 1, 0], [0, 1, 0, 1]])
                              ).rref()
 
 
@@ -62,33 +62,30 @@ def main():
     # generate an iterable of pairs.
     root = Node({})
     root.cost = -np.inf
+    # (a, c), (a, d), (b, c), (b, d)
     for bush_root in dyads:
-        # BR is A and C
+        # bush_root is A and C
         br = Node(bush_root, parent=root)
         br.cost = cost(br.name)
 
-        #all children are A and D
-        children = [d for d in dyads if d != bush_root and d[0] == bush_root[0]]
+        # all children are A and D
+        children = [d for d in dyads if bush_root[0] == d[0] and bush_root[1] != d[1]]
         for child in children:
             # all grandchildren are B and C
-            grandchildren = [d for d in dyads if d != bush_root and d!= child
-                             and not any(d[0] in c for c in child)
-                             and not any(d[1] in c for c in child)]
+            grandchildren = [d for d in dyads if
+                             d[0] != bush_root[0]  # not a
+                             and d[0] != child[1]  # not d
+                             and d[1] == bush_root[1]  # is c
+                             ]
 
             for grandchild in grandchildren:
                 # all greatgrandchildren are B and D
-                greatgrandchildren =[d for d in dyads if d !=bush_root and d!= child and d !=grandchild
-                                     and d[0]==grandchild[0]
-                                     and d[1]==child[1]]
+                greatgrandchildren = [d for d in dyads if d[0] == grandchild[0]
+                                      and d[1] == child[1]]
                 for greatchild in grandchildren:
-                    tetrad = [frozenset(bush_root),frozenset(child),frozenset(grandchild), frozenset(greatchild)]
-                    if(is_valid(tetrad)):
+                    tetrad = [frozenset(bush_root), frozenset(child), frozenset(grandchild), frozenset(greatchild)]
+                    if (is_valid(tetrad)):
                         print(tetrad)
-                    else:
-                        print('.', end='')
-
-
-
 
 
         print('erk.')
@@ -97,11 +94,11 @@ def main():
         #         x = Node(pc, parent=br)
         #         x.cost = cost(x.name)
 
-                # for br in dyads:
-                #     #br is "A and C"
-                #     #children can be any of "A and D", "B and C", "B and D".
-                #     # these are potential A and D and B and Cs.
-                #     children = [c for c in dyads if len(c.intersection(test))==1]
+        # for br in dyads:
+        #     #br is "A and C"
+        #     #children can be any of "A and D", "B and C", "B and D".
+        #     # these are potential A and D and B and Cs.
+        #     children = [c for c in dyads if len(c.intersection(test))==1]
 
 
 if __name__ == "__main__":
