@@ -5,6 +5,7 @@ from collections import defaultdict
 import numpy as np
 import sympy
 from anytree import Node
+from anytree.exporter import DotExporter
 
 gene_data = 'bloodspot_figure_2.json'
 
@@ -48,41 +49,77 @@ def cost(pair):
         cost.append((a ** 2 + b ** 2) * weights[i])
     return np.mean(cost)
 
+def make_tetrad(*args):
+    """makes a frozenset tetrad from a list"""
+    return frozenset([frozenset(x) for x in args])
+
+def make_node_dict(dyad):
+    return {'dyad':dyad
+            , 'cost': cost(dyad)
+            , 'children': []}
 
 def main():
-    root = Node({})
-    root.cost = -np.inf
-    # (a, c), (a, d), (b, c), (b, d)
-    bushes = defaultdict(list)
-    for bush_root in dyads:
-        # bush_root is A and C
-        br = Node(bush_root, parent=root)
-        br.cost = cost(br.name)
+    valid_tetrads = set()
 
+
+    root = Node('root')
+    root.cost = np.nan
+    # (a, c), (a, d), (b, c), (b, d)
+    # bush_root is A and C
+    for bush_root in dyads:
         # all children are A and D
-        children = [d for d in dyads if bush_root[0] == d[0] and bush_root[1] != d[1]]
-        for child in children:
+        br_children = [d for d in dyads if
+                    bush_root[0] == d[0] # is a
+                    and bush_root[1] != d[1]] #is possibly D
+        for child in br_children:
             # all grandchildren are B and C
             grandchildren = [d for d in dyads if
                              d[0] != bush_root[0]  # not a
                              and d[0] != child[1]  # not d
-                             and d[1] == bush_root[1]  # is c
-                             ]
+                             and d[1] == bush_root[1]]  # is c
 
             for grandchild in grandchildren:
                 # all greatgrandchildren are B and D
-                greatgrandchildren = [d for d in dyads if d[0] == grandchild[0]
+                greatgrandchildren = [d for d in dyads if
+                                      d[0] == grandchild[0]
                                       and d[1] == child[1]]
+
                 for greatchild in greatgrandchildren:
-                    tetrad = [frozenset(bush_root), frozenset(child), frozenset(grandchild), frozenset(greatchild)]
-                    if is_valid(tetrad):
-                        r = Node(bush_root)
-                        c = Node(child, parent=r)
-                        gc = Node(grandchild, parent=c)
-                        ggc = Node(greatchild, parent=gc)
-                        bushes[r] = c
-                        print(tetrad)
-        print('buhh')
+                    #tetrad = [frozenset(bush_root), frozenset(child), frozenset(grandchild), frozenset(greatchild)]
+                    tetrad = make_tetrad(bush_root,child,grandchild,greatchild)
+                    if is_valid(tetrad) and tetrad not in valid_tetrads:
+                        valid_tetrads.add(tetrad)
+                        if not any(x for x in root.children if x.name == bush_root):
+                            br = Node(bush_root)
+                            br.cost = cost(br)
+                            br.parent = root
+                        else:
+                            br = next(x for x in root.children if x.name == bush_root)
+
+                        if not any(x for x in br.children if x.name == child):
+                            c = Node(child)
+                            c.cost = cost(child)
+                            c.parent = br
+                        else:
+                            c = next((x for x in br.children if x.name == child))
+
+                        if not any(x for x in c.children if x.name == grandchild):
+                            gc = Node(grandchild)
+                            gc.cost = cost(gc)
+                            gc.parent = c
+                        else:
+                            gc = next(x for x in c.children if x.name == grandchild)
+
+                        if not any(x for x in gc.children if x.name == greatchild):
+                            ggc = Node(greatchild)
+                            ggc.cost = cost(ggc)
+                            ggc.parent = gc
+                        else:
+                            gc = next(x for x in gc.children if x.name == greatchild)
+
+
+        print(f'processed bush with root {bush_root}')
+
 
 
 if __name__ == "__main__":
