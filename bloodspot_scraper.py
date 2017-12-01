@@ -77,7 +77,7 @@ def sanitize_name(namestr):
         namestr = namestr.replace(illegal, known_bad(illegal))
     if not namestr[0].isalpha():
         namestr = f'm_{namestr}'
-return namestr
+    return namestr
 
 
 
