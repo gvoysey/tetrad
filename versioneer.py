@@ -28,7 +28,7 @@ system, and maybe making new tarballs.
 ## Quick Install
 
 * `pip install versioneer` to somewhere to your $PATH
-* add a `[versioneer]` section to your setup.cfg (see below)
+* add_node a `[versioneer]` section to your setup.cfg (see below)
 * run `versioneer install` in your source tree, commit the results
 
 ## Version Identifiers
@@ -1152,7 +1152,7 @@ def do_vcs_install(manifest_in, versionfile_source, ipy):
         f.write("%s export-subst\n" % versionfile_source)
         f.close()
         files.append(".gitattributes")
-    run_command(GITS, ["add", "--"] + files)
+    run_command(GITS, ["add_node", "--"] + files)
 
 
 def versions_from_parentdir(parentdir_prefix, root, verbose):
@@ -1499,7 +1499,7 @@ def get_cmdclass():
 
     cmds = {}
 
-    # we add "version" to both distutils and setuptools
+    # we add_node "version" to both distutils and setuptools
     from distutils.core import Command
 
     class cmd_version(Command):
