@@ -4,7 +4,7 @@ from itertools import permutations, combinations
 import numpy as np
 import sympy
 from anytree import Node
-from anytree.exporter import DotExporter
+from anytree.exporter import DotExporter, JsonExporter
 
 from tetrad.bio import cost, SURFACE_TARGETS
 from datetime import datetime
@@ -106,6 +106,9 @@ def make_tree():
 def main():
     tree = make_tree()
     DotExporter(tree).to_dotfile('full_tree.dot')
+    with open('full_tree.json', 'w') as f:
+        JsonExporter.write(tree, f)
+    print(f'node count: {len(tree.descendants)}')
 
 
 if __name__ == "__main__":
