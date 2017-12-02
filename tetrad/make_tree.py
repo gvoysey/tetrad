@@ -1,37 +1,24 @@
 import json
 from itertools import permutations, combinations
-from collections import defaultdict
 
 import numpy as np
 import sympy
 from anytree import Node
 from anytree.exporter import DotExporter
 
-gene_data = 'bloodspot_figure_2.json'
+from tetrad.cost import cost, SURFACE_TARGETS
+from datetime import datetime
+#gene_data = 'bloodspot_figure_2.json'
+start = datetime.now()
+# with open(gene_data, 'r') as f:
+#     antigens = json.load(f)
+#     antigens.pop('date_accessed')
 
-with open(gene_data, 'r') as f:
-    antigens = json.load(f)
-    antigens.pop('date_accessed')
-
-dyad_pairs = list(combinations(antigens, 2))
-dyads = list(permutations(antigens, 2))
-
-weights = np.ones(41)
-
-
-def cost(pair):
-    return 1
-    A, B = pair
-    A = list(antigens[A].values()).remove("MERGED_AML")
-    B = list(antigens[B].values()).remove("MERGED_AML")
-    cost = []
-    for i, a, b in enumerate(zip(A, B)):
-        cost.append((a ** 2 + b ** 2) * weights[i])
-    return np.mean(cost)
-
+dyad_pairs = list(combinations(SURFACE_TARGETS, 2))
+dyads = list(permutations(SURFACE_TARGETS, 2))
 
 valid_scoring = sympy.Matrix(np.array([[1, 0, 1, 0], [1, 0, 0, 1]
-                                          , [0, 1, 1, 0], [0, 1, 0, 1]])
+                                     , [0, 1, 1, 0], [0, 1, 0, 1]])
                              ).rref()
 dyad_costs = {k: cost(k) for k in (frozenset(d) for d in dyad_pairs)}
 
@@ -146,6 +133,7 @@ def main():
         if len(root.children) > 0:
             DotExporter(root).to_dotfile(f'test.dot')
     DotExporter(root).to_dotfile('full_tree.dot')
+    print(f'took {(datetime.now() -start).total_seconds()} to generate full tree before pruning')
 
 
 if __name__ == "__main__":

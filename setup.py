@@ -14,8 +14,8 @@ setup(
     description='A tool for discovering antigen targets for AML',
     install_requires=[
         'attrs'
-        ,'docopt'
-        ,'numpy'
-        ,'pyteomics'
+
+        ,'numpy', 'pandas', 'anytree', 'sympy'
+
     ]
 )
