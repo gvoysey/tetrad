@@ -1,5 +1,5 @@
 import json
-from itertools import permutations
+from itertools import permutations,combinations
 from collections import defaultdict
 
 import numpy as np
@@ -12,6 +12,8 @@ gene_data = 'bloodspot_figure_2.json'
 with open(gene_data, 'r') as f:
     antigens = json.load(f)
     antigens.pop('date_accessed')
+
+dyad_pairs = list(combinations(antigens,2))
 
 dyads = list(permutations(antigens, 2))
 
@@ -53,30 +55,27 @@ def make_tetrad(*args):
     """makes a frozenset tetrad from a list"""
     return frozenset([frozenset(x) for x in args])
 
-def make_node_dict(dyad):
-    return {'dyad':dyad
-            , 'cost': cost(dyad)
-            , 'children': []}
 
 def main():
     valid_tetrads = set()
+    dyad_costs = {}
 
 
     root = Node('root')
-    root.cost = np.nan
+    root.cost = 0
     # (a, c), (a, d), (b, c), (b, d)
     # bush_root is A and C
-    for bush_root in dyads:
+    for parent in dyad_pairs:
         # all children are A and D
         br_children = [d for d in dyads if
-                    bush_root[0] == d[0] # is a
-                    and bush_root[1] != d[1]] #is possibly D
+                    parent[0] == d[0] # is a
+                    and parent[1] != d[1]] #is possibly D
         for child in br_children:
             # all grandchildren are B and C
             grandchildren = [d for d in dyads if
-                             d[0] != bush_root[0]  # not a
+                             d[0] != parent[0]  # not a
                              and d[0] != child[1]  # not d
-                             and d[1] == bush_root[1]]  # is c
+                             and d[1] == parent[1]]  # is c
 
             for grandchild in grandchildren:
                 # all greatgrandchildren are B and D
@@ -84,17 +83,34 @@ def main():
                                       d[0] == grandchild[0]
                                       and d[1] == child[1]]
 
-                for greatchild in greatgrandchildren:
+                for greatgrandchild in greatgrandchildren:
                     #tetrad = [frozenset(bush_root), frozenset(child), frozenset(grandchild), frozenset(greatchild)]
-                    tetrad = make_tetrad(bush_root,child,grandchild,greatchild)
-                    if is_valid(tetrad) and tetrad not in valid_tetrads:
+                    tetrad = make_tetrad(parent,child,grandchild,greatgrandchild)
+
+                    if is_valid(tetrad):# and tetrad not in valid_tetrads:
                         valid_tetrads.add(tetrad)
-                        if not any(x for x in root.children if x.name == bush_root):
-                            br = Node(bush_root)
+
+                        def add(tetrad, parent_node):
+                            matches = [x for x in parent_node.children if x.name == tetrad]
+                            if not any(matches):
+                                n = Node(tetrad)
+                                n.cost = cost(tetrad)
+                                n.parent=parent_node
+                            else:
+                                n= matches[0]
+                            return n
+
+                        if not any(x for x in root.children if x.name == parent):
+                            br = Node(parent)
                             br.cost = cost(br)
                             br.parent = root
+                            try:
+                                dyad_costs[parent] = br.cost
+                            except KeyError:
+                                pass
+
                         else:
-                            br = next(x for x in root.children if x.name == bush_root)
+                            br = next(x for x in root.children if x.name == parent)
 
                         if not any(x for x in br.children if x.name == child):
                             c = Node(child)
@@ -110,15 +126,18 @@ def main():
                         else:
                             gc = next(x for x in c.children if x.name == grandchild)
 
-                        if not any(x for x in gc.children if x.name == greatchild):
-                            ggc = Node(greatchild)
+                        if not any(x for x in gc.children if x.name == greatgrandchild):
+                            ggc = Node(greatgrandchild)
                             ggc.cost = cost(ggc)
                             ggc.parent = gc
                         else:
-                            gc = next(x for x in gc.children if x.name == greatchild)
+                            ggc = next(x for x in gc.children if x.name == greatgrandchild)
 
 
-        print(f'processed bush with root {bush_root}')
+        print(f'processed bush with root {parent}')
+        if len(root.children) > 0:
+            DotExporter(br).to_dotfile(f'test.dot')
+    DotExporter(root).to_dotfile('full_tree.dot')
 
 
 
