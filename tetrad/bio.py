@@ -1,3 +1,4 @@
+"""Create a tree of valid tetrads with a cost assigned per node"""
 import numpy as np
 import pandas as pd
 import json

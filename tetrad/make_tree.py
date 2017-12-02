@@ -17,12 +17,15 @@ dyads = list(permutations(SURFACE_TARGETS, 2))
 # memoize the costs for efficient lookup.
 dyad_costs = {k: cost(k) for k in (frozenset(d) for d in dyad_pairs)}
 
+
 def get_cost(dyad):
     """Convert a dyad to a frozen set for fast cost lookup in the dyad costs table"""
     return dyad_costs[frozenset(dyad)]
 
+
 valid_scoring = sympy.Matrix(np.array([[1, 0, 1, 0], [1, 0, 0, 1]
                                      , [0, 1, 1, 0], [0, 1, 0, 1]])).rref()
+
 
 def is_valid(tetrad):
     """Check if a given input obeys the correct form 
@@ -42,6 +45,7 @@ def is_valid(tetrad):
                 tetrad_state[i, j] = 1
     return sympy.Matrix(tetrad_state).rref() == valid_scoring
 
+
 def make_tetrad(*args):
     """makes a frozenset tetrad from a list"""
     return frozenset([frozenset(x) for x in args])
@@ -57,6 +61,7 @@ def add_node(dyad, parent_node):
     else:
         n = matches[0]
     return n
+
 
 def make_tree():
     """Iteratively build a tree of unique, valid tetrads.  A valid tetrad has 4 target dyads
