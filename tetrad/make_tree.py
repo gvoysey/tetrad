@@ -6,30 +6,29 @@ import sympy
 from anytree import Node
 from anytree.exporter import DotExporter
 
-from tetrad.cost import cost, SURFACE_TARGETS
+from tetrad.bio import cost, SURFACE_TARGETS
 from datetime import datetime
-#gene_data = 'bloodspot_figure_2.json'
+
 start = datetime.now()
-# with open(gene_data, 'r') as f:
-#     antigens = json.load(f)
-#     antigens.pop('date_accessed')
-
+#  the top level of the tree can be combination-only.
 dyad_pairs = list(combinations(SURFACE_TARGETS, 2))
+# subsequent levels need a broader search space to account for disorder in pairings.
 dyads = list(permutations(SURFACE_TARGETS, 2))
-
-valid_scoring = sympy.Matrix(np.array([[1, 0, 1, 0], [1, 0, 0, 1]
-                                     , [0, 1, 1, 0], [0, 1, 0, 1]])
-                             ).rref()
+# memoize the costs for efficient lookup.
 dyad_costs = {k: cost(k) for k in (frozenset(d) for d in dyad_pairs)}
 
-
 def get_cost(dyad):
+    """Convert a dyad to a frozen set for fast cost lookup in the dyad costs table"""
     return dyad_costs[frozenset(dyad)]
 
+valid_scoring = sympy.Matrix(np.array([[1, 0, 1, 0], [1, 0, 0, 1]
+                                     , [0, 1, 1, 0], [0, 1, 0, 1]])).rref()
 
 def is_valid(tetrad):
     """Check if a given input obeys the correct form 
-    (a,c), (a,d), (b,c), (b,d)"""
+    (a,c), (a,d), (b,c), (b,d).  An input is valid IFF the matrix of states it forms
+    is row-equivalent to the known correct state."""
+
     # list of unique strings in tetrad
     elements = sorted(list(frozenset.union(*tetrad)))
     if len(elements) > 4:
@@ -43,34 +42,38 @@ def is_valid(tetrad):
                 tetrad_state[i, j] = 1
     return sympy.Matrix(tetrad_state).rref() == valid_scoring
 
-
 def make_tetrad(*args):
     """makes a frozenset tetrad from a list"""
     return frozenset([frozenset(x) for x in args])
 
 
-def add_node(tetrad, parent_node):
-    matches = [x for x in parent_node.children if x.name == tetrad]
+def add_node(dyad, parent_node):
+    """Make a cost-scored node from a target pair dyad.  Use memoized cost lookups for speed"""
+    matches = [x for x in parent_node.children if x.name == dyad]
     if not any(matches):
-        n = Node(tetrad)
-        n.cost = get_cost(tetrad)
+        n = Node(dyad)
+        n.cost = get_cost(dyad)
         n.parent = parent_node
     else:
         n = matches[0]
     return n
 
+def make_tree():
+    """Iteratively build a tree of unique, valid tetrads.  A valid tetrad has 4 target dyads
+    whose elements obey the relationship  {(a, c), (a, d), (b, c), (b, d)} """
 
-def main():
+    # memoized cache of previously-added valid tetrads to prevent duplication.
     valid_tetrads = set()
+
     root = Node('root')
     root.cost = 0
-    # (a, c), (a, d), (b, c), (b, d)
+
     # bush_root is A and C
     for parent in dyad_pairs:
         # all children are A and D
         br_children = [d for d in dyads if
                        parent[0] == d[0]  # is a
-                       and parent[1] != d[1]]  # is possibly D
+                       and parent[1] != d[1]]  # is not A.
         for child in br_children:
             # all grandchildren are B and C
             grandchildren = [d for d in dyads if
@@ -85,55 +88,24 @@ def main():
                                       and d[1] == child[1]]
 
                 for greatgrandchild in greatgrandchildren:
-                    # tetrad = [frozenset(bush_root), frozenset(child), frozenset(grandchild), frozenset(greatchild)]
                     tetrad = make_tetrad(parent, child, grandchild, greatgrandchild)
 
-                    if is_valid(tetrad):  # and tetrad not in valid_tetrads:
+                    if is_valid(tetrad) and tetrad not in valid_tetrads:
                         valid_tetrads.add(tetrad)
-
                         parent_node = add_node(parent, root)
                         child_node = add_node(child, parent_node)
                         grandchild_node = add_node(grandchild, child_node)
                         greatgrandchild_node = add_node(greatgrandchild, grandchild_node)
-                        #
-                        # if not any(x for x in root.children if x.name == parent):
-                        #     br = Node(parent)
-                        #     br.cost = cost(br)
-                        #     br.parent = root
-                        #     try:
-                        #         dyad_costs[parent] = br.cost
-                        #     except KeyError:
-                        #         pass
-                        #
-                        # else:
-                        #     br = next(x for x in root.children if x.name == parent)
-                        #
-                        # if not any(x for x in br.children if x.name == child):
-                        #     c = Node(child)
-                        #     c.cost = cost(child)
-                        #     c.parent = br
-                        # else:
-                        #     c = next((x for x in br.children if x.name == child))
-                        #
-                        # if not any(x for x in c.children if x.name == grandchild):
-                        #     gc = Node(grandchild)
-                        #     gc.cost = cost(gc)
-                        #     gc.parent = c
-                        # else:
-                        #     gc = next(x for x in c.children if x.name == grandchild)
-                        #
-                        # if not any(x for x in gc.children if x.name == greatgrandchild):
-                        #     ggc = Node(greatgrandchild)
-                        #     ggc.cost = cost(ggc)
-                        #     ggc.parent = gc
-                        # else:
-                        #     ggc = next(x for x in gc.children if x.name == greatgrandchild)
 
         print(f'processed bush with root {parent}')
-        if len(root.children) > 0:
-            DotExporter(root).to_dotfile(f'test.dot')
-    DotExporter(root).to_dotfile('full_tree.dot')
+
     print(f'took {(datetime.now() -start).total_seconds()} to generate full tree before pruning')
+    return root
+
+
+def main():
+    tree = make_tree()
+    DotExporter(tree).to_dotfile('full_tree.dot')
 
 
 if __name__ == "__main__":

@@ -1,6 +1,9 @@
 import numpy as np
 import pandas as pd
+import json
 
+
+#  The receptor matrix is derived from Perna et. al (2017) http://dx.doi.org/10.1016/j.ccell.2017.09.004, figure 2b.
 receptor_matrix = np.array([
 [2, 1, 1, 2, 1, 1, 2, 1, 2, 1, 2, 2, 0, 1, 2, 2, 1, 2, 1, 2, 1, 2, 1, 2, 0, 2, 2, 1, 2, 2, 2, 2, 1, 1, 2, 0, 2, 1, 2, 2, 0, 3, 1],
 [0, 1, 1, 1, 1, 0, 1, 2, 2, 0, 2, 2, 1, 1, 2, 2, 0, 1, 0, 1, 0, 2, 2, 1, 1, 1, 2, 1, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0, 2, 2, 0, 3, 2],
@@ -73,7 +76,8 @@ weights = np.ones(len(tissue_types))
 
 
 def cost(dyad):
-    """Returns the cost of the given pair"""
+    """Returns the cost function for the given pair of targets.  The cost function is
+    a measure of predicted selectivity for AML-specific cell types"""
     dyad = list(dyad)
     a = df[dyad[0]]
     b = df[dyad[1]]
@@ -83,8 +87,15 @@ def cost(dyad):
     return np.mean(retval)
 
 
-def get_cost(dyad):
-    return dyad_costs[frozenset(dyad)]
+gene_data = 'bloodspot_figure_2.json'
+with open(gene_data, 'r') as f:
+    antigens = json.load(f)
+    antigens.pop('date_accessed')
+
+
+def gain(dyad):
+    """Return the gain function of a pair of targets.  The gain function is a measure of predicted efficacy against known AML cell types."""
+    pass
 
 if __name__ == "__main__":
     print(cost(('CD96', 'CD70')))
