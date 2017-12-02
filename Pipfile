@@ -1,21 +1,23 @@
 [[source]]
+
 url = "https://pypi.python.org/simple"
 verify_ssl = true
 name = "pypi"
 
+
 [packages]
-pyteomics = "*"
-numpy = "*"
-attrs = "*"
-docopt = "*"
+
 scipy = "*"
-selenium = "*"
-Scrapy = "*"
-ipython = "*"
+attrs = "*"
+anytree = "*"
+sympy = "*"
+
 
 [dev-packages]
+
 ipython = "*"
-matplotlib = "*"
+
 
 [requires]
+
 python_version = "3.6"
