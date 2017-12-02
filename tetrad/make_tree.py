@@ -106,8 +106,11 @@ def make_tree():
 def main():
     tree = make_tree()
     DotExporter(tree).to_dotfile('full_tree.dot')
+
     with open('full_tree.json', 'w') as f:
-        JsonExporter.write(tree, f)
+        exporter = JsonExporter(indent=4, sort_keys=True)
+        exporter.write(tree, f)
+
     print(f'node count: {len(tree.descendants)}')
 
 
