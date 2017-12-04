@@ -1,4 +1,4 @@
-import json
+"""Create a tree of valid tetrads with a cost assigned per node"""
 from itertools import permutations, combinations
 
 import numpy as np
@@ -23,7 +23,7 @@ def get_cost(dyad):
     return dyad_costs[frozenset(dyad)]
 
 
-valid_scoring = sympy.Matrix(np.array([[1, 0, 1, 0], [1, 0, 0, 1]
+VALID_TETRAD = sympy.Matrix(np.array([[1, 0, 1, 0], [1, 0, 0, 1]
                                      , [0, 1, 1, 0], [0, 1, 0, 1]])).rref()
 
 
@@ -43,7 +43,7 @@ def is_valid(tetrad):
         for j, e in enumerate(elements):
             if e in pair:
                 tetrad_state[i, j] = 1
-    return sympy.Matrix(tetrad_state).rref() == valid_scoring
+    return sympy.Matrix(tetrad_state).rref() == VALID_TETRAD
 
 
 def make_tetrad(*args):

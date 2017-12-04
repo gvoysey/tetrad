@@ -1,4 +1,4 @@
-"""Create a tree of valid tetrads with a cost assigned per node"""
+"""Cost and Gain functions to evaluate off-target effects and on-target efficacy"""
 import numpy as np
 import pandas as pd
 import json
