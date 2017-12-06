@@ -73,7 +73,8 @@ with open(gene_data, 'r') as f:
 
 
 def gain(tetrad):
-    """Return the gain function of a pair of targets.  The gain function is a measure of predicted efficacy against known AML cell types."""
+    """Return the gain function of a pair of targets.
+    The gain function is a measure of predicted efficacy against known AML cell types."""
     return sum(dyad_gain(d.name) for d in tetrad)
 
 

@@ -2,7 +2,7 @@
 import sys
 import os
 import anytree
-from tetrad.tree_io import read_tree,extract_tetrads_to_csv
+from tetrad.tree_io import read_tree, extract_tetrads_to_csv, cumulative_cost
 from tetrad.base import data_path
 
 history = {}
@@ -18,16 +18,17 @@ def add_incumbent(node):
     incumbents[' '.join(node.name)] = node
 
 
-def cumulative_cost(node):
-    prev_cost = sum(x.cost for x in node.ancestors if not x.is_root)
-    if not node.is_root:
-        return prev_cost + node.cost
-    else:
-        return None
+
+def find_min(nodes):
+    node_list = [n for n in nodes if not n.is_root]
+    for x in node_list:
+        memoize(x)
+    return min(node_list, key=lambda x: cumulative_cost(x))
 
 
 def find_candidate_minima(node):
-    """find everyone above this node that we've already visited. Previously visited nodes have a cumulative cost."""
+    """find everyone above this node that we've already visited.
+    Previously visited nodes have a cumulative cost."""
     touched = anytree.findall(node.root, filter_=lambda x: x.depth <= node.depth and hasattr(x, 'cumulative_cost'))
     return touched
 
@@ -62,13 +63,6 @@ def walk_tree(current_node):
             walk_tree(find_min(current_node.children))
         else:
             walk_tree(find_min(prev_min.children))
-
-
-def find_min(nodes):
-    node_list = [n for n in nodes if not n.is_root]
-    for x in node_list:
-        memoize(x)
-    return min(node_list, key=lambda x: cumulative_cost(x))
 
 
 def main(tree_path):

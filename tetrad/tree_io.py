@@ -2,8 +2,16 @@ from anytree.importer import JsonImporter
 import anytree
 import pandas as pd
 import os
-from tetrad.branch_and_bound import cumulative_cost
+
 from tetrad.bio import gain
+
+
+def cumulative_cost(node):
+    prev_cost = sum(x.cost for x in node.ancestors if not x.is_root)
+    if not node.is_root:
+        return prev_cost + node.cost
+    else:
+        return None
 
 
 def make_tetrad_str(tetrad):
