@@ -1,4 +1,4 @@
-
+"""Scrapes bloodspot.edu for expression data in various tissue types for a list of genes."""
 import selenium.common
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
@@ -23,28 +23,28 @@ genelist = [
             , 'CD82'
             , 'ITGAX'
             , 'CR1'
-            ,'DAGLB'
-            ,'SEMA4A'
-            ,'TLR2'
-            ,'LTB4R'
-            ,'P2RY13'
-            ,'LILRB2'
-            ,'EMB'
-            ,'CD96'
-            ,'LILRB3'
-            ,'LILRA6'
-            ,'LILRA2'
-            ,'EMR2'# referred to as 'ADGRE2' in the paper
-            ,'LILRB4'
-            ,'CD70'
-            ,'CCR1'
-            ,'IL3RA'
-            ,'CD44'
-            ,'FOLR2'
-            ,'CD38'
-            ,'FUT3'
-            ,'CD33'
-            ,'CLEC12A'
+            , 'DAGLB'
+            , 'SEMA4A'
+            , 'TLR2'
+            , 'LTB4R'
+            , 'P2RY13'
+            , 'LILRB2'
+            , 'EMB'
+            , 'CD96'
+            , 'LILRB3'
+            , 'LILRA6'
+            , 'LILRA2'
+            , 'EMR2'# referred to as 'ADGRE2' in Perna (2017)
+            , 'LILRB4'
+            , 'CD70'
+            , 'CCR1'
+            , 'IL3RA'
+            , 'CD44'
+            , 'FOLR2'
+            , 'CD38'
+            , 'FUT3'
+            , 'CD33'
+            , 'CLEC12A'
             ]
 
 dataset = 'MERGED_AML'
@@ -65,7 +65,7 @@ def known_bad(x):
 
 
 def sanitize_name(namestr):
-    """A valid variable name starts with a letter, followed by letters, 
+    """A valid matlab variable name starts with a letter, followed by letters,
     digits, or underscores, and cannot be one of several reserved words."""
     keywords = {'break', 'case', 'catch', 'classdef', 'continue', 'else', 'elseif', 'end', 'for', 'function',
                 'global', 'if', 'otherwise', 'parfor', 'persistent', 'return', 'spmd', 'switch', 'try', 'while'}
@@ -86,27 +86,31 @@ def query_url(gene,dataset):
     return f'http://servers.binf.ku.dk/bloodspot/?gene={gene}&dataset={dataset}'
 
 def process_csv(fname):
+    """Convert a data file downloaded from bloodspot into a valid collection of data points."""
     name,ext = path.splitext(path.basename(path.abspath(fname)))
     with open(fname,'r') as _:
         r = csv.reader(_)
+        # The first row of the file is a row of repeated headers.
         headers = next(r)
-        gene_name = headers.pop(0) #discard the first column, no data.
+        headers.pop(0) #discard the first column, no data.
+        # The second row of the file is a row of repeated values, and this is the last row.
         values = next(r)
         values.pop(0) #discard the first column, no data.
+
+        # matlab data gets the names changed, json data doesn't
         matlab_data = defaultdict(list)
-        data = defaultdict(list)
+        json_data = defaultdict(list)
         for k,v in zip(headers,values):
             matlab_data[sanitize_name(k)].append(float(v))
-            data[k].append(float(v))
-        matlab_data['dataset']:dataset
-        data['dataset']:dataset
+            json_data[k].append(float(v))
+        matlab_data['dataset']=dataset
+        json_data['dataset']=dataset
+
     struct = {name:matlab_data}
     savemat(f'{name}.mat', struct)
+
     with open(f'{name}.json','w') as _:
-        json.dump(data,_)
-    # remove(path.abspath(fname))
-
-
+        json.dump(json_data,_)
 
 
 def main(*args):
@@ -117,6 +121,7 @@ def main(*args):
         to_download=args
     csvs = []
 
+    #  Scrape the page for each gene with a seperate chromedriver instance for stability.
     for gene in to_download:
         driver = webdriver.Chrome(chrome_options=options)
         driver.implicitly_wait(15)

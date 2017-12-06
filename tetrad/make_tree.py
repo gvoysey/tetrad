@@ -109,6 +109,7 @@ def make_tree():
 
 
 def main():
+    """Make a full tree from the default targets, and export it in graphviz and JSON form."""
     tree = make_tree()
     DotExporter(tree).to_dotfile('full_tree.dot')
 
