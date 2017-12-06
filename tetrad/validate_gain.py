@@ -2,29 +2,31 @@ import anytree
 from tetrad.bio import gain
 from tetrad.tree_io import read_tree
 from tetrad.base import data_path
-from tetrad.make_tree import make_tetrad
+from tetrad.branch_and_bound import cumulative_cost
 import sys
-import csv
 import os
+import pandas as pd
+
+
+def make_tetrad_str(tetrad):
+    tetrad_labels = []
+    for x in tetrad:
+        tetrad_labels.extend(x.name)
+    return ','.join(tetrad_labels)
 
 
 def main(treepath):
-    gains = {}
+    tetrads = {}
     tree = read_tree(treepath)
     leaves = anytree.findall(tree, filter_=lambda x: x.is_leaf)
     for leaf in leaves:
         tetrad = leaf.path[1:]  # omit root
-        gains[tetrad] = gain(tetrad)
+        tetrads[tetrad] = (gain(tetrad), cumulative_cost(leaf))
 
-    with open('results.csv', 'w') as f:
-        writer = csv.writer(f, delimiter="|")
-        writer.writerow(['tetrad label', 'gain function score'])
-        for label, gain_score in gains.items():
-            tetrad_labels = []
-            for x in label:
-                tetrad_labels.extend(x.name)
-            tetrad_name = ','.join(tetrad_labels)
-            writer.writerow([tetrad_name, gain_score])
+    df = pd.DataFrame({make_tetrad_str(k): v for k, v in tetrads.items()}).transpose()
+    df.columns = ['gain', 'cost']
+    df = df.sort_values('cost')
+    df.to_csv('results.csv')
     print(f"wrote {os.path.abspath('results.csv')}")
 
 

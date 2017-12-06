@@ -21,7 +21,7 @@ def add_incumbent(node):
 
 
 def cumulative_cost(node):
-    prev_cost = sum(x.cost for x in node.ancestors if x.cost is not None)
+    prev_cost = sum(x.cost for x in node.ancestors if not x.is_root)
     if node.cost is not None:
         return prev_cost + node.cost
     else:
