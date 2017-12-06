@@ -2,13 +2,11 @@
 import sys
 import os
 import anytree
-from tetrad.tree_io import read_tree
+from tetrad.tree_io import read_tree,extract_tetrads_to_csv
 from tetrad.base import data_path
 
 history = {}
 incumbents = {}
-
-
 
 
 def memoize(node):
@@ -22,7 +20,7 @@ def add_incumbent(node):
 
 def cumulative_cost(node):
     prev_cost = sum(x.cost for x in node.ancestors if not x.is_root)
-    if node.cost is not None:
+    if not node.is_root:
         return prev_cost + node.cost
     else:
         return None
@@ -75,8 +73,9 @@ def find_min(nodes):
 
 def main(tree_path):
     tree = read_tree(tree_path)
+    tree = walk_tree(tree)
+    extract_tetrads_to_csv(tree, 'branched_and_bound.csv')
 
-    walk_tree(tree)
     # best_nodes = {}
     # incumbents = {}
     # # as written this will take a minute...
