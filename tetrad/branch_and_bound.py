@@ -1,28 +1,24 @@
 """Prune a tree of tetrads."""
 import sys
-
+import os
 import anytree
-from anytree.importer import JsonImporter
-
-
-
-def read_tree(file_path):
-    """Deserialize a tree from a saved JSON file"""
-    importer = JsonImporter()
-    with open(file_path, 'r') as j:
-        json_tree = j.read().replace("_name", "name")
-    root = importer.import_(json_tree)
-    root.cost = None
-    return root
+from tetrad.tree_io import read_tree
+from tetrad.base import data_path
 
 history = {}
+incumbents = {}
+
+
+
+
 def memoize(node):
     node.cumulative_cost = cumulative_cost(node)
     history[' '.join(node.name)] = node
 
-incumbents = {}
+
 def add_incumbent(node):
     incumbents[' '.join(node.name)] = node
+
 
 def cumulative_cost(node):
     prev_cost = sum(x.cost for x in node.ancestors if x.cost is not None)
@@ -34,7 +30,7 @@ def cumulative_cost(node):
 
 def find_candidate_minima(node):
     """find everyone above this node that we've already visited. Previously visited nodes have a cumulative cost."""
-    touched = anytree.findall(node.root, filter_=lambda x:x.depth<=node.depth and hasattr(x,'cumulative_cost'))
+    touched = anytree.findall(node.root, filter_=lambda x: x.depth <= node.depth and hasattr(x, 'cumulative_cost'))
     return touched
 
 
@@ -53,32 +49,32 @@ def walk_tree(current_node):
     if current_node.is_root:
         walk_tree(find_min(current_node.children))
     prev_min = find_min(find_candidate_minima(current_node))
-    #if we're at the bottom, we might have a new incumbent.
+    # if we're at the bottom, we might have a new incumbent.
     if current_node.is_leaf:
         add_incumbent(current_node)
         # kill anything whose cumulative sum is higher than this.
-        to_prune = anytree.findall(current_node.root, filter_ = lambda node: cumulative_cost(node) > cumulative_cost(current_node))
+        to_prune = anytree.findall(current_node.root,
+                                   filter_=lambda node: cumulative_cost(node) > cumulative_cost(current_node))
         for x in to_prune:
             x.parent = None
     else:
-        #keep going
-        #if my cumulative cost is the min, recurse on my smallest child; otherwise, recurse on the min's smallest child
+        # keep going
+        # if my cumulative cost is the min, recurse on my smallest child; otherwise, recurse on the min's smallest child
         if prev_min.cumulative_cost is None or current_node.cumulative_cost < prev_min.cumulative_cost:
             walk_tree(find_min(current_node.children))
         else:
             walk_tree(find_min(prev_min.children))
 
 
-
-
 def find_min(nodes):
-    node_list =[n for n in nodes if not n.is_root]
+    node_list = [n for n in nodes if not n.is_root]
     for x in node_list:
         memoize(x)
-    return min(node_list, key=lambda x:cumulative_cost(x))
+    return min(node_list, key=lambda x: cumulative_cost(x))
 
-def main():
-    tree = read_tree(sys.argv[1])
+
+def main(tree_path):
+    tree = read_tree(tree_path)
 
     walk_tree(tree)
     # best_nodes = {}
@@ -119,6 +115,8 @@ def main():
     # #             print('found smaller')
 
 
-
 if __name__ == "__main__":
-    sys.exit(main())
+    if len(sys.argv) > 1:
+        main(sys.argv[1])
+    else:
+        main(os.path.join(data_path, 'full_tree.json'))

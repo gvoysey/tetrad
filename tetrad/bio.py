@@ -2,6 +2,8 @@
 import numpy as np
 import pandas as pd
 import json
+from tetrad.base import data_path
+import os
 
 #  The receptor matrix is derived from Perna et. al (2017) http://dx.doi.org/10.1016/j.ccell.2017.09.004, figure 2b.
 receptor_matrix = np.array([
@@ -64,15 +66,22 @@ def cost(dyad):
     return np.mean(retval)
 
 
-gene_data = 'bloodspot_figure_2.json'
+gene_data = os.path.join(data_path, 'bloodspot_figure_2.json')
 with open(gene_data, 'r') as f:
     antigens = json.load(f)
     antigens.pop('date_accessed')
 
 
-def gain(dyad):
+def gain(tetrad):
     """Return the gain function of a pair of targets.  The gain function is a measure of predicted efficacy against known AML cell types."""
-    pass
+    return sum(dyad_gain(d.name) for d in tetrad)
+
+def dyad_gain(dyad):
+    for id in dyad:
+        #bloodspot data is now a dict.  each key is one column in the bloodspot data plot, each value is every data point for that column.
+        bloodspot_data = antigens[id]
+        #tbd here
+    return 0 # for now; return real gain later.
 
 
 if __name__ == "__main__":

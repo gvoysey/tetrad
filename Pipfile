@@ -7,15 +7,14 @@ name = "pypi"
 
 [packages]
 
-pyteomics = "*"
 numpy = "*"
 attrs = "*"
 docopt = "*"
 scipy = "*"
 selenium = "*"
-scrapy = "*"
-ipython = "*"
 pandas = "*"
+anytree ="*"
+sympy = "*"
 
 
 [dev-packages]
