@@ -24,8 +24,8 @@ def main(treepath):
         tetrads[tetrad] = (gain(tetrad), cumulative_cost(leaf))
 
     df = pd.DataFrame({make_tetrad_str(k): v for k, v in tetrads.items()}).transpose()
-    df.columns = ['gain', 'cost']
-    df = df.sort_values('cost')
+    df.columns = ['gain', 'cumulative_cost']
+    df = df.sort_values('cumulative_cost')
     df.to_csv('results.csv')
     print(f"wrote {os.path.abspath('results.csv')}")
 
