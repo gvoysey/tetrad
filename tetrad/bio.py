@@ -76,12 +76,13 @@ def gain(tetrad):
     """Return the gain function of a pair of targets.  The gain function is a measure of predicted efficacy against known AML cell types."""
     return sum(dyad_gain(d.name) for d in tetrad)
 
+
 def dyad_gain(dyad):
-    for id in dyad:
-        #bloodspot data is now a dict.  each key is one column in the bloodspot data plot, each value is every data point for that column.
-        bloodspot_data = antigens[id]
-        #tbd here
-    return 0 # for now; return real gain later.
+    for gene_id in dyad:
+        # bloodspot data is now a dict.  each key is one column in the bloodspot data plot, each value is every data point for that column.
+        bloodspot_data = antigens[gene_id]
+        # tbd here
+    return 0  # for now; return real gain later.
 
 
 if __name__ == "__main__":
