@@ -1,4 +1,4 @@
-"""Prune a tree of tetrads."""
+"""Prune a tree of tetrads via maximum parsimony branch and bound"""
 import sys
 import os
 import anytree
@@ -18,51 +18,70 @@ def add_incumbent(node):
     incumbents[' '.join(node.name)] = node
 
 
-
 def find_min(nodes):
     node_list = [n for n in nodes if not n.is_root]
     for x in node_list:
         memoize(x)
+
     return min(node_list, key=lambda x: cumulative_cost(x))
+
+
+def visited(node):
+    return hasattr(node, 'visited')
+
+
+def visit(node):
+    node.visited = True
+    return node
 
 
 def find_candidate_minima(node):
     """find everyone above this node that we've already visited.
     Previously visited nodes have a cumulative cost."""
-    touched = anytree.findall(node.root, filter_=lambda x: x.depth <= node.depth and hasattr(x, 'cumulative_cost'))
+    touched = anytree.findall(node.root, filter_=lambda x: x.depth < node.depth and not x.is_root and not visited(x))
+    # and visited(x))  # and hasattr(x, 'cumulative_cost'))
     return touched
+
+
+previous_node = None
 
 
 def walk_tree(current_node):
     print(f'current node: {current_node.name}, depth: {current_node.depth}')
     # i have now seen this node; write it down and compute its cumulative cost
     memoize(current_node)
-    # find the minimum of  this node's siblings and everything every level up.
-    # min_sibling = find_min(current_node.siblings)
-    # min_ancestors = []
-    # for a in current_node.ancestors:
-    #     min_ancestors.append(find_min(a+a.siblings))
-    # min_ancestors = find_min(min_ancestors)
-    #
-    # prev_min = find_min(min_sibling+min_ancestors)
+    visit(current_node)
+    previous_node = current_node
+    # if i'm the root node, i have no dyad information, so just find my smallest child and go there.
     if current_node.is_root:
-        walk_tree(find_min(current_node.children))
-    prev_min = find_min(find_candidate_minima(current_node))
+        min_root_child = find_min(current_node.children)
+        walk_tree(min_root_child)
     # if we're at the bottom, we might have a new incumbent.
-    if current_node.is_leaf:
+    if not current_node.is_leaf:
+        # find the minimum of this node's siblings and everything every level up.  If the only thing "up" is root, that's ok.
+        ancestors = find_candidate_minima(current_node)
+        if ancestors:
+            prev_min = find_min((a for a in ancestors if not a == previous_node))
+        else:
+            prev_min = current_node.root
+        # keep going
+        # if my cumulative cost is the min, recurse on my smallest child; otherwise, recurse on the min's smallest child
+        if prev_min.is_root or current_node.cumulative_cost <= prev_min.cumulative_cost:
+            print(f'\tcurrent node cumulative cost was less than previous minimum, continuing down.')
+            current_min_child = find_min((c for c in current_node.children if not c==previous_node))
+            walk_tree(current_min_child)
+        else:
+            print(f'\tcurrent node cumulative cost was greater than previous minimum, jumping.')
+            prev_min_child = find_min((c for c in prev_min.children if not c==previous_node))
+            walk_tree(prev_min_child)
+    else:
         add_incumbent(current_node)
         # kill anything whose cumulative sum is higher than this.
         to_prune = anytree.findall(current_node.root,
                                    filter_=lambda node: cumulative_cost(node) > cumulative_cost(current_node))
         for x in to_prune:
             x.parent = None
-    else:
-        # keep going
-        # if my cumulative cost is the min, recurse on my smallest child; otherwise, recurse on the min's smallest child
-        if prev_min.cumulative_cost is None or current_node.cumulative_cost < prev_min.cumulative_cost:
-            walk_tree(find_min(current_node.children))
-        else:
-            walk_tree(find_min(prev_min.children))
+        print(f'\tfound incumbent {current_node}, pruned {len(to_prune)} nodes.')
 
 
 def main(tree_path):
