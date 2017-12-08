@@ -10,26 +10,27 @@ Tetrad is a python package for the scoring and identification of  combinations o
     - `pipenv` (optional but strongly recommended)
 
 ### Installation
-    On linux and mac:
-    ```
-    make dev-install
-    ```
-    On windows:
-    ```
-    pipenv install --dev
-    pipenv install -e .
-    pipenv shell
-    ```
+
+On linux and mac:
+```
+make dev-install
+```
+On windows:
+```
+pipenv install --dev
+pipenv install -e .
+pipenv shell
+```
 
 #### Tests
-    On linux and mac: 
-    ```
-    make test
-    ```
-    On windows:
-    ```
-    pytest .
-    ```
+On linux and mac: 
+```
+make test
+```
+On windows:
+```
+pytest .
+```
 ## Credits 
 This package was developed as the final project for the Fall 2017 semester of BE562, Computational Biology, at Boston University's College of Engineering. 
 
