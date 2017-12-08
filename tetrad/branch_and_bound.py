@@ -2,6 +2,8 @@
 import sys
 import os
 import anytree
+from anytree import Node
+from typing import Iterable
 from tetrad.tree_io import read_tree, extract_tetrads_to_csv, cumulative_cost
 from tetrad.base import data_path
 
@@ -9,16 +11,16 @@ history = {}
 incumbents = {}
 
 
-def memoize(node):
+def memoize(node:Node):
     node.cumulative_cost = cumulative_cost(node)
     history[' '.join(node.name)] = node
 
 
-def add_incumbent(node):
+def add_incumbent(node:Node):
     incumbents[' '.join(node.name)] = node
 
 
-def find_min(nodes):
+def find_min(nodes:Iterable[Node]):
     node_list = [n for n in nodes if not n.is_root]
     for x in node_list:
         memoize(x)
@@ -26,16 +28,16 @@ def find_min(nodes):
     return min(node_list, key=lambda x: cumulative_cost(x))
 
 
-def visited(node):
+def visited(node:Node):
     return hasattr(node, 'visited')
 
 
-def visit(node):
+def visit(node:Node):
     node.visited = True
     return node
 
 
-def find_candidate_minima(node):
+def find_candidate_minima(node:Node):
     """find everyone above this node that we've already visited.
     Previously visited nodes have a cumulative cost."""
     touched = anytree.findall(node.root, filter_=lambda x: x.depth < node.depth and not x.is_root and not visited(x))
@@ -46,7 +48,7 @@ def find_candidate_minima(node):
 previous_node = None
 
 
-def walk_tree(current_node):
+def walk_tree(current_node:Node):
     print(f'current node: {current_node.name}, depth: {current_node.depth}')
     # i have now seen this node; write it down and compute its cumulative cost
     memoize(current_node)
@@ -61,18 +63,18 @@ def walk_tree(current_node):
         # find the minimum of this node's siblings and everything every level up.  If the only thing "up" is root, that's ok.
         ancestors = find_candidate_minima(current_node)
         if ancestors:
-            prev_min = find_min((a for a in ancestors if not a == previous_node))
+            prev_min = find_min((a for a in ancestors if a not in current_node.ancestors))
         else:
             prev_min = current_node.root
         # keep going
         # if my cumulative cost is the min, recurse on my smallest child; otherwise, recurse on the min's smallest child
         if prev_min.is_root or current_node.cumulative_cost <= prev_min.cumulative_cost:
             print(f'\tcurrent node cumulative cost was less than previous minimum, continuing down.')
-            current_min_child = find_min((c for c in current_node.children if not c==previous_node))
+            current_min_child = find_min((c for c in current_node.children if c not in current_node.ancestors))
             walk_tree(current_min_child)
         else:
             print(f'\tcurrent node cumulative cost was greater than previous minimum, jumping.')
-            prev_min_child = find_min((c for c in prev_min.children if not c==previous_node))
+            prev_min_child = find_min((c for c in prev_min.children if c not in current_node.ancestors and not visited(c)))
             walk_tree(prev_min_child)
     else:
         add_incumbent(current_node)
@@ -84,7 +86,7 @@ def walk_tree(current_node):
         print(f'\tfound incumbent {current_node}, pruned {len(to_prune)} nodes.')
 
 
-def main(tree_path):
+def main(tree_path:str):
     tree = read_tree(tree_path)
     tree = walk_tree(tree)
     extract_tetrads_to_csv(tree, 'branched_and_bound.csv')

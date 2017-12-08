@@ -1,12 +1,13 @@
 from anytree.importer import JsonImporter
 import anytree
+from anytree import Node
 import pandas as pd
 import os
 
 from tetrad.bio import gain
 
 
-def cumulative_cost(node):
+def cumulative_cost(node: Node):
     prev_cost = sum(x.cost for x in node.ancestors if not x.is_root)
     if not node.is_root:
         return prev_cost + node.cost
@@ -21,7 +22,7 @@ def make_tetrad_str(tetrad):
     return ','.join(tetrad_labels)
 
 
-def read_tree(file_path):
+def read_tree(file_path: str):
     """Deserialize a tree from a saved JSON file"""
     importer = JsonImporter()
     with open(file_path, 'r') as j:
@@ -31,7 +32,7 @@ def read_tree(file_path):
     return root
 
 
-def extract_tetrads_to_csv(tree, outfile):
+def extract_tetrads_to_csv(tree: Node, outfile: str):
     tetrads = {}
     leaves = anytree.findall(tree, filter_=lambda x: x.is_leaf)
     for leaf in leaves:
