@@ -6,8 +6,8 @@ all:
 
 dev-install:
 	@pipenv install --dev
-	@pipenv run pip install -e . 
-	@echo "installed development version"
+	@pipenv run pip install -e . 	
+	@echo "to activate this project's environment, run \`pipenv shell\` "
 
 test:
 	@pipenv run pytest
