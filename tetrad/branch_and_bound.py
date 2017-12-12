@@ -50,75 +50,54 @@ def find_candidate_minima(node: Node):
 
 
 @attr.s
-class Bound:
+class BranchBound:
     previous_node = attr.ib(default=None)
-
     history = attr.ib(default=[])
     incumbent = attr.ib(default=None)
 
-    def bound(self, node: Node):
+    def walk(self, node: Node):
         print(f'current node: {node.name}, depth: {node.depth}')
         compute_cumulative_cost(node)
         visit(node)
 
-        if not node.is_leaf: #and self.incumbent is None:
-            self.bound(find_min(node.children))
+        if not node.is_leaf:
+            print('\tThis is not a leaf; continuing down')
+            self.walk(find_min(node.children))
         else:
-            self.incumbent = node
-            to_prune = anytree.findall(node.root, filter_=lambda x: not x.is_root
-                                                                    and x.depth < node.depth
-                                                                    and has_cumulative_cost(x)
-                                                                    and x.cumulative_cost > node.cumulative_cost)
-            for x in to_prune:
-                x.parent = None
-            self.history.append(node)
-            next_node = find_min([x for x in node.root.children if not visited(x)])
-            self.bound(next_node)
+            print('\tThis is a leaf; checking incumbency.')
+            if self.incumbent is None or self.incumbent.cumulative_cost > node.cumulative_cost:
+                print(f'\t\tThere is no incumbent yet, or this leaf has a lower cost.  Promoting {node.name} to incumbent.')
+                self.incumbent = node
+                to_prune = anytree.findall(node.root, filter_=lambda x: not x.is_root
+                                                                        and x.depth < node.depth
+                                                                        and has_cumulative_cost(x)
+                                                                        and x.cumulative_cost > node.cumulative_cost)
+                for x in to_prune:
+                    x.parent = None
+                print(f'\t\tPruned {len(to_prune)} nodes')
+                self.history.append(node)
+                next_node = find_min([x for x in node.root.children if not visited(x)])
+                print(f'\t\tIdentified new minimum node to visit: {next_node.name}, depth {next_node.depth}')
+                self.walk(next_node)
+            else:
+                candidate_minima = [x for x in node.root.children if not visited(x) and x not in node.ancestors]
+                if candidate_minima:
+                    next_node = find_min(candidate_minima)
+                    print(f"\t\tLeaf {node.name} has a larger cumulatuve cost than the current incumbent.")
+                    print(f'\t\tReturning to a higher node {next_node.name}')
+                    self.walk(next_node)
+                else:
+                    print(f'\t\t\tTree is depleted. This leaf is not the new incumbent but no higher nodes have a lower cumulative cost')
+                    return node.root
 
 
-    def walk(self, current_node: Node):
-        print(f'current node: {current_node.name}, depth: {current_node.depth}')
-        # i have now seen this node; write it down and compute its cumulative cost
-        compute_cumulative_cost(current_node)
-        visit(current_node)
-        self.previous_node = current_node
-        # if i'm the root node, i have no dyad information, so just find my smallest child and go there.
-        if current_node.is_root:
-            min_root_child = find_min(current_node.children)
-            self.walk(min_root_child)
-        # if we're at the bottom, we might have a new incumbent.
-        if not current_node.is_leaf:
-            self.walk(find_min(current_node.children))
-            # find the minimum of this node's siblings and everything every level up.  If the only thing "up" is root, that's ok.
-            ancestors = find_candidate_minima(current_node)
-            if ancestors:
-                prev_min = find_min((a for a in ancestors if a not in current_node.ancestors))
-            else:
-                prev_min = current_node.root
-            # keep going
-            # if my cumulative cost is the min, recurse on my smallest child; otherwise, recurse on the min's smallest child
-            if prev_min.is_root or current_node.cumulative_cost <= prev_min.cumulative_cost:
-                print(f'\tcurrent node cumulative cost was less than previous minimum, continuing down.')
-                current_min_child = find_min((c for c in current_node.children if c not in current_node.ancestors))
-                self.walk(current_min_child)
-            else:
-                print(f'\tcurrent node cumulative cost was greater than previous minimum, jumping.')
-                prev_min_child = find_min(
-                        (c for c in prev_min.children if c not in current_node.ancestors and not visited(c)))
-                self.walk(prev_min_child)
-        else:
-            self.incumbent = current_node
-            # kill anything whose cumulative sum is higher than this.
-            to_prune = anytree.findall(current_node.root,
-                                       filter_=lambda node: cumulative_cost(node) > cumulative_cost(current_node))
-            for x in to_prune:
-                x.parent = None
-            print(f'\tfound incumbent {current_node}, pruned {len(to_prune)} nodes.')
+
+
 
 
 def main(tree_path: str):
     tree = read_tree(tree_path)
-    tree = Bound().bound(tree)
+    tree = BranchBound().walk(tree)
     extract_tetrads_to_csv(tree, 'branched_and_bound.csv')
 
     # best_nodes = {}
