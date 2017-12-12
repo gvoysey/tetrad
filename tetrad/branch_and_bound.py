@@ -54,8 +54,11 @@ class BranchBound:
     previous_node = attr.ib(default=None)
     history = attr.ib(default=[])
     incumbent = attr.ib(default=None)
+    pruned_count = attr.ib(default=0)
+    iter_count = attr.ib(default=0)
 
     def walk(self, node: Node):
+        self.iter_count += 1
         print(f'current node: {node.name}, depth: {node.depth}')
         compute_cumulative_cost(node)
         visit(node)
@@ -66,7 +69,8 @@ class BranchBound:
         else:
             print('\tThis is a leaf; checking incumbency.')
             if self.incumbent is None or self.incumbent.cumulative_cost > node.cumulative_cost:
-                print(f'\t\tThere is no incumbent yet, or this leaf has a lower cost.  Promoting {node.name} to incumbent.')
+                print(
+                    f'\t\tThere is no incumbent yet, or this leaf has a lower cost.  Promoting {node.name} to incumbent.')
                 self.incumbent = node
                 to_prune = anytree.findall(node.root, filter_=lambda x: not x.is_root
                                                                         and x.depth < node.depth
@@ -74,7 +78,9 @@ class BranchBound:
                                                                         and x.cumulative_cost > node.cumulative_cost)
                 for x in to_prune:
                     x.parent = None
-                print(f'\t\tPruned {len(to_prune)} nodes')
+                pruned = len(to_prune)
+                print(f'\t\tPruned {pruned} nodes')
+                self.pruned_count += pruned
                 self.history.append(node)
                 next_node = find_min([x for x in node.root.children if not visited(x)])
                 print(f'\t\tIdentified new minimum node to visit: {next_node.name}, depth {next_node.depth}')
@@ -87,59 +93,25 @@ class BranchBound:
                     print(f'\t\tReturning to a higher node {next_node.name}')
                     self.walk(next_node)
                 else:
-                    print(f'\t\t\tTree is depleted. This leaf is not the new incumbent but no higher nodes have a lower cumulative cost')
+                    print(
+                        f'\t\t\tTree is depleted. This leaf is not the new incumbent but no higher nodes have a lower cumulative cost')
+                    print(f'Pruning complete. {self.pruned_count} nodes were removed in {self.iter_count} passes')
                     return node.root
-
-
-
-
 
 
 def main(tree_path: str):
     tree = read_tree(tree_path)
+    size = len(tree.root.descendants)
     tree = BranchBound().walk(tree)
+    pruned_size = len(tree.root.descendants)
     extract_tetrads_to_csv(tree, 'branched_and_bound.csv')
-
-    # best_nodes = {}
-    # incumbents = {}
-    # # as written this will take a minute...
-    # _,parents,children,grandchildren,greatgrandchildren = (anytree.LevelOrderGroupIter(tree))
-    #
-    #
-    # for idx, level_nodes in enumerate(anytree.LevelOrderGroupIter(tree)):
-    #     if idx == 0:
-    #         pass
-    #     level_min = find_min(level_nodes)
-    #
-    #
-    #
-    # min_parent = find_min(parents)
-    # min_child = find_min(children)
-    # min_grandchild = find_min(grandchildren)
-    # min_greatgrandchild = find_min(greatgrandchildren)
-    #
-    # min_cost = min(min_parent, min_child, min_grandchild, min_greatgrandchild)
-    #
-    # for child in min_parent.children:
-    #     if child.cost <= min_parent.cost + min(parents+min_parent.children):
-    #
-    #
-    #
-    #
-    #
-    # # for i, children in enumerate(anytree.LevelOrderGroupIter(tree)):
-    # #     if i==0:
-    # #         # nobody cares about the root node.
-    # #         pass
-    # #     else:
-    # #         min_child = min(children, key = lambda  x: x.cost)
-    # #         best_nodes[frozenset(min_child.name)] = min_child.cost
-    # #         if min_child.cost < min(best_nodes.values()):
-    # #             print('found smaller')
 
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:
-        main(sys.argv[1])
+        tree_file = sys.argv[1]
+        print(f'Using new tree {tree_file}')
     else:
-        main(os.path.join(data_path, 'full_tree.json'))
+        tree_file = os.path.join(data_path, 'full_tree.json')
+        print(f'Using previously generated tree {tree_file}')
+    main(tree_file)
