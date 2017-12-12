@@ -44,3 +44,12 @@ def extract_tetrads_to_csv(tree: Node, outfile: str):
     df = df.sort_values('cumulative_cost')
     df.to_csv(outfile)
     print(f"wrote {os.path.abspath(outfile)}")
+
+
+def read_tetrad_csv(file_path: str) -> pd.DataFrame:
+    df = pd.read_csv(file_path)
+    df['ratio'] = df['gain'] / df['cost']
+    df = df.transpose().dropna(axis=1, how='all').transpose()
+    df = df.sort_values('ratio', ascending=False)
+    df[['cost', 'gain', 'ratio']] = df[['cost', 'gain', 'ratio']].apply(pd.to_numeric)
+    return df

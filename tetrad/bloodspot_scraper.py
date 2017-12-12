@@ -1,17 +1,16 @@
 """Scrapes bloodspot.edu for expression data in various tissue types for a list of genes."""
-import selenium.common
-from selenium import webdriver
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.support.ui import WebDriverWait
-from os import path, remove
-from scipy.io import savemat
 import csv
-from collections import defaultdict
-from datetime import datetime
+import json
 import re
 import sys
-import time
-import json
+from collections import defaultdict
+from datetime import datetime
+from os import path
+
+import selenium.common
+from scipy.io import savemat
+from selenium import webdriver
+from selenium.webdriver.support.ui import WebDriverWait
 
 genelist = [
             'ITGB5'

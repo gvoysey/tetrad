@@ -11,16 +11,16 @@ history = {}
 incumbents = {}
 
 
-def memoize(node:Node):
+def memoize(node: Node):
     node.cumulative_cost = cumulative_cost(node)
     history[' '.join(node.name)] = node
 
 
-def add_incumbent(node:Node):
+def add_incumbent(node: Node):
     incumbents[' '.join(node.name)] = node
 
 
-def find_min(nodes:Iterable[Node]):
+def find_min(nodes: Iterable[Node]):
     node_list = [n for n in nodes if not n.is_root]
     for x in node_list:
         memoize(x)
@@ -28,16 +28,16 @@ def find_min(nodes:Iterable[Node]):
     return min(node_list, key=lambda x: cumulative_cost(x))
 
 
-def visited(node:Node):
+def visited(node: Node):
     return hasattr(node, 'visited')
 
 
-def visit(node:Node):
+def visit(node: Node):
     node.visited = True
     return node
 
 
-def find_candidate_minima(node:Node):
+def find_candidate_minima(node: Node):
     """find everyone above this node that we've already visited.
     Previously visited nodes have a cumulative cost."""
     touched = anytree.findall(node.root, filter_=lambda x: x.depth < node.depth and not x.is_root and not visited(x))
@@ -48,7 +48,7 @@ def find_candidate_minima(node:Node):
 previous_node = None
 
 
-def walk_tree(current_node:Node):
+def walk_tree(current_node: Node):
     print(f'current node: {current_node.name}, depth: {current_node.depth}')
     # i have now seen this node; write it down and compute its cumulative cost
     memoize(current_node)
@@ -74,7 +74,8 @@ def walk_tree(current_node:Node):
             walk_tree(current_min_child)
         else:
             print(f'\tcurrent node cumulative cost was greater than previous minimum, jumping.')
-            prev_min_child = find_min((c for c in prev_min.children if c not in current_node.ancestors and not visited(c)))
+            prev_min_child = find_min(
+                (c for c in prev_min.children if c not in current_node.ancestors and not visited(c)))
             walk_tree(prev_min_child)
     else:
         add_incumbent(current_node)
@@ -86,7 +87,7 @@ def walk_tree(current_node:Node):
         print(f'\tfound incumbent {current_node}, pruned {len(to_prune)} nodes.')
 
 
-def main(tree_path:str):
+def main(tree_path: str):
     tree = read_tree(tree_path)
     tree = walk_tree(tree)
     extract_tetrads_to_csv(tree, 'branched_and_bound.csv')
