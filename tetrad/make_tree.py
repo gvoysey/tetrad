@@ -14,7 +14,7 @@ start = datetime.now()
 dyad_pairs = list(combinations(SURFACE_TARGETS, 2))
 # subsequent levels need a broader search space to account for disorder in pairings.
 dyads = list(permutations(SURFACE_TARGETS, 2))
-# memoize the costs for efficient lookup.
+# compute_cumulative_cost the costs for efficient lookup.
 dyad_costs = {k: cost(k) for k in (frozenset(d) for d in dyad_pairs)}
 
 
