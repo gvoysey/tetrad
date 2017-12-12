@@ -96,14 +96,18 @@ class BranchBound:
                     print(
                         f'\t\t\tTree is depleted. This leaf is not the new incumbent but no higher nodes have a lower cumulative cost')
                     print(f'Pruning complete. {self.pruned_count} nodes were removed in {self.iter_count} passes')
-                    return node.root
+
+        retval = node.root
+        return retval
+
 
 
 def main(tree_path: str):
     tree = read_tree(tree_path)
     size = len(tree.root.descendants)
-    tree = BranchBound().walk(tree)
-    pruned_size = len(tree.root.descendants)
+    pruned_tree = BranchBound().walk(tree)
+    pruned_size = len(pruned_tree.root.descendants)
+    print(f'Tree size reduced by {(pruned_size/size)*100:0.2f}%')
     extract_tetrads_to_csv(tree, 'branched_and_bound.csv')
 
 
